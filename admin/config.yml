@@ -1,0 +1,545 @@
+# =====================================================================
+# Decap CMS configuration for earlook99.github.io
+# Backend authentication is brokered by DecapBridge (PKCE flow).
+# =====================================================================
+
+# Use DecapBridge PKCE auth (required)
+backend:
+  name: git-gateway
+  repo: earlook99/earlook99.github.io
+  branch: main
+  auth_type: pkce
+  base_url: https://auth.decapbridge.com
+  auth_endpoint: /sites/8cc733bc-b2f7-4d7d-a33d-855c631a1276/pkce
+  auth_token_endpoint: /sites/8cc733bc-b2f7-4d7d-a33d-855c631a1276/token
+  gateway_url: https://gateway.decapbridge.com
+
+  # See who did what in commit history
+  commit_messages:
+    create: Create {{collection}} “{{slug}}” - {{author-name}} <{{author-login}}> via DecapBridge
+    update: Update {{collection}} “{{slug}}” - {{author-name}} <{{author-login}}> via DecapBridge
+    delete: Delete {{collection}} “{{slug}}” - {{author-name}} <{{author-login}}> via DecapBridge
+    uploadMedia: Upload “{{path}}” - {{author-name}} <{{author-login}}> via DecapBridge
+    deleteMedia: Delete “{{path}}” - {{author-name}} <{{author-login}}> via DecapBridge
+    openAuthoring: Message {{message}} - {{author-name}} <{{author-login}}> via DecapBridge
+
+# Enable PKCE user info claims (required for "who did what")
+auth:
+  email_claim: email
+  first_name_claim: first_name
+  last_name_claim: last_name
+  avatar_url_claim: avatar_url
+
+# Tell Decap CMS where uploaded images go inside the repo
+media_folder: "assets/img/posts"
+public_folder: "/assets/img/posts"
+
+# CMS UI locale (Korean)
+locale: "ko"
+
+site_url: https://earlook99.github.io
+display_url: https://earlook99.github.io
+logo_url: https://decapbridge.com/decapcms-with-bridge.svg
+
+# Direct commits to main. Switch to `editorial_workflow` later if you want
+# a draft/PR-based flow.
+publish_mode: simple
+
+# =====================================================================
+# Collections
+# =====================================================================
+collections:
+
+  # ───────────────────────────────────────────────────────────────────
+  # 1. Blog posts
+  # ───────────────────────────────────────────────────────────────────
+  - name: "posts"
+    label: "글"
+    label_singular: "글"
+    folder: "_posts"
+    create: true
+    slug: "{{year}}-{{month}}-{{day}}-{{slug}}"
+    extension: "md"
+    format: "frontmatter"
+    summary: "{{title}} — {{year}}-{{month}}-{{day}}"
+    sortable_fields: ["date", "title"]
+    view_filters:
+      - label: "고정 (Pinned)"
+        field: pin
+        pattern: true
+    fields:
+      - { name: "title", label: "제목", widget: "string" }
+      - {
+          name: "date",
+          label: "작성일",
+          widget: "datetime",
+          date_format: "YYYY-MM-DD",
+          time_format: "HH:mm:ss",
+          picker_utc: false,
+          format: "YYYY-MM-DD HH:mm:ss +0900"
+        }
+      - {
+          name: "categories",
+          label: "카테고리",
+          widget: "list",
+          required: false,
+          default: [],
+          hint: "예: [Unreal Engine, Tutorial]"
+        }
+      - {
+          name: "tags",
+          label: "태그",
+          widget: "list",
+          required: false,
+          default: [],
+          hint: "예: [c++, blueprint]"
+        }
+      - {
+          name: "description",
+          label: "요약 (SEO description)",
+          widget: "string",
+          required: false
+        }
+      - {
+          name: "pin",
+          label: "상단 고정",
+          widget: "boolean",
+          required: false,
+          default: false
+        }
+      - {
+          name: "math",
+          label: "수식(MathJax) 사용",
+          widget: "boolean",
+          required: false,
+          default: false
+        }
+      - {
+          name: "mermaid",
+          label: "다이어그램(Mermaid) 사용",
+          widget: "boolean",
+          required: false,
+          default: false
+        }
+      - name: "image"
+        label: "대표 이미지"
+        widget: "object"
+        required: false
+        collapsed: true
+        fields:
+          - { name: "path", label: "이미지", widget: "image", required: false }
+          - { name: "alt", label: "대체 텍스트", widget: "string", required: false }
+      - { name: "body", label: "본문", widget: "markdown" }
+
+  # ───────────────────────────────────────────────────────────────────
+  # 2. Tab pages
+  # ───────────────────────────────────────────────────────────────────
+  - name: "tabs"
+    label: "탭 페이지"
+    label_singular: "탭"
+    files:
+      - name: "about"
+        label: "정보 (About)"
+        file: "_tabs/about.md"
+        fields:
+          - {
+              name: "icon",
+              label: "메뉴 아이콘 (Font Awesome class)",
+              widget: "string",
+              default: "fas fa-info-circle"
+            }
+          - {
+              name: "order",
+              label: "메뉴 순서 (작을수록 위)",
+              widget: "number",
+              default: 4,
+              value_type: "int"
+            }
+          - { name: "body", label: "본문", widget: "markdown" }
+
+  # ───────────────────────────────────────────────────────────────────
+  # 3. Site configuration (_config.yml)
+  #
+  # IMPORTANT: Decap CMS strips YAML keys not declared in `fields`.
+  # To prevent silent data loss, EVERY top-level key of _config.yml
+  # is declared below. Editable ones use real widgets; rarely-touched
+  # keys use `hidden` widget with a default that mirrors the current
+  # _config.yml exactly. If you ever change those rarely-touched keys
+  # in _config.yml directly, also update the matching `default:` here.
+  # ───────────────────────────────────────────────────────────────────
+  - name: "site"
+    label: "사이트 설정"
+    files:
+      - name: "config"
+        label: "사이트 설정"
+        file: "_config.yml"
+        editor:
+          preview: false
+        fields:
+          # ─── 사이트 정체성 ───
+          - {
+              name: "title",
+              label: "사이트 제목",
+              widget: "string",
+              hint: "사이드바 큰 제목 + 브라우저 탭"
+            }
+          - {
+              name: "tagline",
+              label: "부제 (Tagline)",
+              widget: "string",
+              hint: "사이드바 제목 아래 작은 글씨"
+            }
+          - {
+              name: "description",
+              label: "사이트 설명 (SEO)",
+              widget: "text"
+            }
+
+          # ─── URL / 언어 ───
+          - {
+              name: "url",
+              label: "사이트 URL",
+              widget: "string",
+              hint: "끝에 / 없이. 예: https://earlook99.github.io"
+            }
+          - {
+              name: "baseurl",
+              label: "Base URL",
+              widget: "string",
+              required: false,
+              default: ""
+            }
+          - {
+              name: "lang",
+              label: "언어 코드",
+              widget: "string",
+              default: "ko-KR",
+              hint: "_data/locales 의 파일명과 일치해야 함 (gem 제공)"
+            }
+          - {
+              name: "timezone",
+              label: "타임존",
+              widget: "string",
+              default: "Asia/Seoul"
+            }
+
+          # ─── 미디어 ───
+          - {
+              name: "cdn",
+              label: "CDN 베이스 URL",
+              widget: "string",
+              required: false,
+              hint: "/로 시작하는 미디어 경로 앞에 붙음. 비워두면 사이트 자체에서 호스팅"
+            }
+          - {
+              name: "avatar",
+              label: "아바타 이미지",
+              widget: "string",
+              required: false,
+              hint: "예: /assets/img/profile.jpg 또는 외부 URL"
+            }
+          - {
+              name: "social_preview_image",
+              label: "소셜 미리보기 이미지",
+              widget: "string",
+              required: false,
+              hint: "링크 공유 시 og:image. 1200x630 권장"
+            }
+
+          # ─── GitHub ───
+          - name: "github"
+            label: "GitHub"
+            widget: "object"
+            fields:
+              - { name: "username", label: "GitHub 사용자명", widget: "string" }
+
+          # ─── Social ───
+          - name: "social"
+            label: "소셜 정보"
+            widget: "object"
+            fields:
+              - {
+                  name: "name",
+                  label: "이름 (저작권 표시)",
+                  widget: "string"
+                }
+              - { name: "email", label: "이메일", widget: "string" }
+              - {
+                  name: "fediverse_handle",
+                  label: "Fediverse 핸들",
+                  widget: "string",
+                  required: false
+                }
+              - {
+                  name: "links",
+                  label: "소셜 링크 목록",
+                  widget: "list",
+                  default: [],
+                  hint: "첫 번째 링크가 푸터의 저작권자 링크가 됨"
+                }
+
+          # ─── 검색엔진 인증 ───
+          - name: "webmaster_verifications"
+            label: "검색엔진 인증 코드"
+            widget: "object"
+            collapsed: true
+            fields:
+              - { name: "google", label: "Google", widget: "string", required: false }
+              - { name: "bing", label: "Bing", widget: "string", required: false }
+              - { name: "alexa", label: "Alexa", widget: "string", required: false }
+              - { name: "yandex", label: "Yandex", widget: "string", required: false }
+              - { name: "baidu", label: "Baidu", widget: "string", required: false }
+              - { name: "facebook", label: "Facebook", widget: "string", required: false }
+
+          # ─── Analytics ───
+          - name: "analytics"
+            label: "방문자 통계"
+            widget: "object"
+            collapsed: true
+            fields:
+              - name: "google"
+                widget: "object"
+                fields:
+                  - {
+                      name: "id",
+                      label: "Google Analytics ID",
+                      widget: "string",
+                      required: false
+                    }
+              - name: "goatcounter"
+                widget: "object"
+                fields:
+                  - {
+                      name: "id",
+                      label: "GoatCounter ID",
+                      widget: "string",
+                      required: false
+                    }
+              - name: "umami"
+                widget: "object"
+                fields:
+                  - { name: "id", label: "Umami ID", widget: "string", required: false }
+                  - { name: "domain", label: "Umami 도메인", widget: "string", required: false }
+              - name: "matomo"
+                widget: "object"
+                fields:
+                  - { name: "id", label: "Matomo ID", widget: "string", required: false }
+                  - { name: "domain", label: "Matomo 도메인", widget: "string", required: false }
+              - name: "cloudflare"
+                widget: "object"
+                fields:
+                  - {
+                      name: "id",
+                      label: "Cloudflare Web Analytics token",
+                      widget: "string",
+                      required: false
+                    }
+              - name: "fathom"
+                widget: "object"
+                fields:
+                  - { name: "id", label: "Fathom Site ID", widget: "string", required: false }
+
+          # ─── Page views ───
+          - name: "pageviews"
+            label: "페이지뷰 표시"
+            widget: "object"
+            collapsed: true
+            fields:
+              - {
+                  name: "provider",
+                  label: "Provider",
+                  widget: "string",
+                  required: false,
+                  hint: "현재 'goatcounter'만 지원"
+                }
+
+          # ─── 테마 / TOC / paginate ───
+          - {
+              name: "theme_mode",
+              label: "테마 모드",
+              widget: "string",
+              required: false,
+              hint: "light / dark / 비워두면 시스템 설정 따라감"
+            }
+          - {
+              name: "toc",
+              label: "글 목차(TOC) 사용",
+              widget: "boolean",
+              default: true
+            }
+          - {
+              name: "paginate",
+              label: "페이지당 글 수",
+              widget: "number",
+              default: 10,
+              value_type: "int"
+            }
+
+          # ─── Comments ───
+          - name: "comments"
+            label: "댓글 시스템"
+            widget: "object"
+            collapsed: true
+            fields:
+              - {
+                  name: "provider",
+                  label: "Provider",
+                  widget: "string",
+                  required: false,
+                  hint: "disqus / utterances / giscus / 빈값=비활성"
+                }
+              - name: "disqus"
+                widget: "object"
+                fields:
+                  - { name: "shortname", label: "Disqus shortname", widget: "string", required: false }
+              - name: "utterances"
+                widget: "object"
+                fields:
+                  - { name: "repo", label: "리포 (user/repo)", widget: "string", required: false }
+                  - { name: "issue_term", label: "Issue term", widget: "string", required: false }
+              - name: "giscus"
+                widget: "object"
+                fields:
+                  - { name: "repo", label: "리포 (user/repo)", widget: "string", required: false }
+                  - { name: "repo_id", label: "Repo ID", widget: "string", required: false }
+                  - { name: "category", label: "Category", widget: "string", required: false }
+                  - { name: "category_id", label: "Category ID", widget: "string", required: false }
+                  - { name: "mapping", label: "Mapping", widget: "string", required: false }
+                  - { name: "strict", label: "Strict", widget: "string", required: false }
+                  - { name: "input_position", label: "Input position", widget: "string", required: false }
+                  - { name: "lang", label: "Language", widget: "string", required: false }
+                  - { name: "reactions_enabled", label: "Reactions enabled", widget: "string", required: false }
+
+          # ─── Self-host assets ───
+          - name: "assets"
+            label: "Self-host assets"
+            widget: "object"
+            collapsed: true
+            fields:
+              - name: "self_host"
+                widget: "object"
+                fields:
+                  - {
+                      name: "enabled",
+                      label: "활성화",
+                      widget: "boolean",
+                      required: false,
+                      default: false
+                    }
+                  - {
+                      name: "env",
+                      label: "환경",
+                      widget: "string",
+                      required: false,
+                      hint: "development / production / 빈값=둘 다"
+                    }
+
+          # ─── PWA ───
+          - name: "pwa"
+            label: "PWA"
+            widget: "object"
+            collapsed: true
+            fields:
+              - {
+                  name: "enabled",
+                  label: "PWA 활성화",
+                  widget: "boolean",
+                  default: true
+                }
+              - name: "cache"
+                widget: "object"
+                fields:
+                  - {
+                      name: "enabled",
+                      label: "오프라인 캐시 활성화",
+                      widget: "boolean",
+                      default: true
+                    }
+                  - {
+                      name: "deny_paths",
+                      label: "캐시 제외 경로",
+                      widget: "list",
+                      default: []
+                    }
+
+          # ─── Hidden (보존만, 절대 변경 X) ───
+          - { name: "theme", widget: "hidden", default: "jekyll-theme-chirpy" }
+          - name: "kramdown"
+            widget: "hidden"
+            default:
+              footnote_backlink: "&#8617;&#xfe0e;"
+              syntax_highlighter: rouge
+              syntax_highlighter_opts:
+                css_class: highlight
+                span:
+                  line_numbers: false
+                block:
+                  line_numbers: true
+                  start_line: 1
+          - name: "collections"
+            widget: "hidden"
+            default:
+              tabs:
+                output: true
+                sort_by: order
+          - name: "defaults"
+            widget: "hidden"
+            default:
+              - scope:
+                  path: ""
+                  type: posts
+                values:
+                  layout: post
+                  comments: true
+                  toc: true
+                  permalink: /posts/:title/
+              - scope:
+                  path: _drafts
+                values:
+                  comments: false
+              - scope:
+                  path: ""
+                  type: tabs
+                values:
+                  layout: page
+                  permalink: /:title/
+              - scope:
+                  path: admin
+                values:
+                  sitemap: false
+          - name: "sass"
+            widget: "hidden"
+            default:
+              style: compressed
+          - name: "compress_html"
+            widget: "hidden"
+            default:
+              clippings: all
+              comments: all
+              endings: all
+              profile: false
+              blanklines: false
+              ignore:
+                envs: [development]
+          - name: "exclude"
+            widget: "hidden"
+            default:
+              - "*.gem"
+              - "*.gemspec"
+              - docs
+              - tools
+              - README.md
+              - LICENSE
+              - purgecss.js
+              - "*.config.js"
+              - "package*.json"
+          - name: "jekyll-archives"
+            widget: "hidden"
+            default:
+              enabled: [categories, tags]
+              layouts:
+                category: category
+                tag: tag
+              permalinks:
+                tag: /tags/:name/
+                category: /categories/:name/
